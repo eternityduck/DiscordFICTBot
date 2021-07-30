@@ -1,51 +1,69 @@
 ﻿using System;
-using System.Threading.Channels;
+using System.IO;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Addons.Hosting;
+using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using DS_Bot.Services;
+
 namespace DS_Bot
 {
-    public class Program
+    class Program
     {
-        private DiscordSocketClient _client;
-	
-        public static void Main(string[] args)
-            => new Program().MainAsync().GetAwaiter().GetResult();
-
-        public async Task MainAsync()
+        
+        public static async Task Main()
         {
-            _client = new DiscordSocketClient();
-            _client.MessageReceived += CommandsHandler;
-            _client.Log += Log;
-
-            var token = "ODcwNTk5NjUxMDQzMTg0NzE0.YQPHGw.uXN4Dy2S2R9YI2KiObIghFX9afA";
-            await _client.LoginAsync(TokenType.Bot, token);
-            await _client.StartAsync();
             
-            await Task.Delay(-1);
-            Console.ReadLine();
-        }
-
-        private Task CommandsHandler(SocketMessage arg)
-        {
-            if (!arg.Author.IsBot)
-            {
-                switch (arg.Content)
+            var builder = new HostBuilder()
+                .ConfigureAppConfiguration(x =>
                 {
-                    case "!hi":
-                        arg.Channel.SendMessageAsync($"Hi {arg.Author.Mention}");
-                        break;
+                    var configuration = new ConfigurationBuilder()
+                        .SetBasePath(Directory.GetCurrentDirectory())
+                        .AddJsonFile("appsettings.json", false, true)
+                        .Build();
 
-                }
+                    x.AddConfiguration(configuration);
+                })
+                .ConfigureLogging(x =>
+                {
+                    x.AddConsole();
+                    x.SetMinimumLevel(LogLevel.Debug); // Defines what kind of information should be logged (e.g. Debug, Information, Warning, Critical) adjust this to your liking
+                })
+                .ConfigureDiscordHost<DiscordSocketClient>((context, config) =>
+                {
+                    config.SocketConfig = new DiscordSocketConfig
+                    {
+                        LogLevel = LogSeverity.Verbose, // Defines what kind of information should be logged from the API (e.g. Verbose, Info, Warning, Critical) adjust this to your liking
+                        AlwaysDownloadUsers = true,
+                        MessageCacheSize = 200,
+                    };
+
+                    config.Token = context.Configuration["token"];
+                })
+                .UseCommandService((context, config) =>
+                {
+                    config.CaseSensitiveCommands = false;
+                    config.LogLevel = LogSeverity.Verbose;
+                    config.DefaultRunMode = RunMode.Sync;
+                })
+                .ConfigureServices((context, services) =>
+                {
+                    services.AddHostedService<CommandHandler>();
+                })
+                .UseConsoleLifetime();
+            
+            var host = builder.Build();
+            using (host)
+            {
+                await host.RunAsync();
             }
-
-            return Task.CompletedTask;
         }
 
-        private Task Log(LogMessage msg)
-        {
-            Console.WriteLine(msg.ToString());
-            return Task.CompletedTask;
-        }
+        
     }
 }

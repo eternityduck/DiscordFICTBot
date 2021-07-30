@@ -2,17 +2,25 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Discord.Net" Version="2.4.0" />
-      <PackageReference Include="Discord.Net.Commands" Version="2.4.0" />
-      <PackageReference Include="Discord.Net.Core" Version="2.4.0" />
-      <PackageReference Include="Discord.Net.WebSocket" Version="2.4.0" />
-      <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0-preview.6.21352.12" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0-preview.6.21352.12" />
-      <PackageReference Include="NetEscapades.Configuration.Yaml" Version="2.1.0" />
+        <PackageReference Include="Discord.Addons.Hosting" Version="3.0.0" />
+        <PackageReference Include="Discord.Net" Version="2.2.0" />
+        <PackageReference Include="Discord.Net.Commands" Version="2.2.0" />
+        <PackageReference Include="Discord.Net.Core" Version="2.2.0" />
+        <PackageReference Include="Discord.Net.WebSocket" Version="2.2.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.7" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.7" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.7" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.7" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="appsettings.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
 </Project>
