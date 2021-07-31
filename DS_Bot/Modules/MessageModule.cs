@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -23,7 +24,12 @@ namespace DS_Bot.Modules
             await Context.Channel.SendMessageAsync("Pon");
             await Context.User.SendMessageAsync("qq");
         }
-
+        [Command("test")]
+        public async Task TestAsync()
+        {
+            
+            await Context.Channel.SendMessageAsync("**FІCT. TALKING & GAMING!**");
+        }
         [Command("math")]
         public async Task MathAsync([Remainder] string math)
         {

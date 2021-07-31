@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,9 +32,16 @@ namespace DS_Bot.Services
         {
             _client.MessageReceived += OnMessageReceived;
             _service.CommandExecuted += OnCommandExecuted;
+            _client.ChannelCreated += OnChannelCreated;
+            _client.ReactionAdded += OnReactionAdded;
+            _client.JoinedGuild += OnJoinedGuild;
             _client.UserJoined += UserJoined;
+            _client.UserLeft += UserLeft;
             await _service.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);
         }
+
+        
+
 
         private async Task OnMessageReceived(SocketMessage arg)
         {
@@ -53,15 +61,37 @@ namespace DS_Bot.Services
             if (command.IsSpecified && !result.IsSuccess) await context.Channel.SendMessageAsync($"Error: {result}");
         }
 
-        public async Task UserJoined(SocketGuildUser socketGuildUser)
+        private async Task UserJoined(SocketGuildUser socketGuildUser)
         {
             await socketGuildUser.SendMessageAsync($"Hello {socketGuildUser.Mention}");
-            //await socketGuildUser.Guild.GetTextChannel(754431024104079380)
-             //   .SendMessageAsync(socketGuildUser.Mention); 
-             string strGuildId = socketGuildUser.Guild.Id.ToString();
-             ulong ulongId = Convert.ToUInt64(strGuildId);
-             var channel = socketGuildUser.Guild.GetChannel(ulongId) as SocketTextChannel;
-             await channel.SendMessageAsync("a user has changed status!");
+          
+            await socketGuildUser.Guild.TextChannels.First(x => x.Name == "🆕гостевой")
+                .SendMessageAsync($"Привет, мы ждали именно тебя, {socketGuildUser.Mention}.\nДобро пожаловать на **FІCT.TALKING & GAMING!**\nЗайди и получи роли в отдельном канале {socketGuildUser.Guild.GetTextChannel(759794521243779084).Mention} и ознакомься с нашими правилами в  {socketGuildUser.Guild.GetTextChannel(755005977148915754).Mention} :stuck_out_tongue_winking_eye:");
+        }
+        private async Task UserLeft(SocketGuildUser arg)
+        {
+            await arg.Guild.TextChannels.First(x => x.Name == "🆕гостевой")
+                .SendMessageAsync($"Прощай, {arg.Mention}");
+        }
+        private async Task OnChannelCreated(SocketChannel arg)
+        {
+            if((arg as ITextChannel) == null) return;
+            var channel = arg as ITextChannel;
+
+            await channel.SendMessageAsync("The event was called");
+        }
+        private async Task OnJoinedGuild(SocketGuild arg)
+        {
+            await arg.DefaultChannel.SendMessageAsync("Thank you for using KPI bot!!! Type !help to get all commands");
+        }
+        private async Task OnReactionAdded(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2, SocketReaction arg3)
+        {
+            if(arg1.Id != 871070199107973120) return;
+            
+            if(arg3.Emote.Name != "👍") return;
+
+            var role = (arg2 as SocketGuildChannel)?.Guild.Roles.FirstOrDefault(x => x.Id == 871070668014379028);
+            await (arg3.User.Value as SocketGuildUser)?.AddRoleAsync(role);
         }
     }
 }
