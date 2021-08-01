@@ -10,6 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using DS_Bot.Services;
+using DS_Bot.Utilities;
+using KpiDsLibrary;
 
 namespace DS_Bot
 {
@@ -53,7 +55,14 @@ namespace DS_Bot
                 })
                 .ConfigureServices((context, services) =>
                 {
-                    services.AddHostedService<CommandHandler>();
+                    services.AddHostedService<CommandHandler>()
+                        .AddDbContext<KpiBotContext>()
+                        .AddSingleton<Servers>()
+                        .AddSingleton<Ranks>()
+                        .AddSingleton<AutoRoles>()
+                        .AddSingleton<RanksHelper>()
+                        .AddSingleton<AutoRolesHelper>();
+
                 })
                 .UseConsoleLifetime();
             

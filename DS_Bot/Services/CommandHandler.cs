@@ -7,6 +7,8 @@ using Discord;
 using Discord.Addons.Hosting;
 using Discord.Commands;
 using Discord.WebSocket;
+using DS_Bot.Utilities;
+using KpiDsLibrary;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
@@ -18,14 +20,18 @@ namespace DS_Bot.Services
         private readonly DiscordSocketClient _client;
         private readonly CommandService _service;
         private readonly IConfiguration _config;
+        private readonly Servers _servers;
+        private readonly AutoRolesHelper _autoRolesHelper;
 
         public CommandHandler(IServiceProvider provider, DiscordSocketClient client, CommandService service,
-            IConfiguration config)
+            IConfiguration config, Servers servers, AutoRolesHelper autoRolesHelper)
         {
             _provider = provider;
             _client = client;
             _service = service;
             _config = config;
+            _servers = servers;
+            _autoRolesHelper = autoRolesHelper;
         }
 
         public override async Task InitializeAsync(CancellationToken cancellationToken)
@@ -49,7 +55,8 @@ namespace DS_Bot.Services
             if (message.Source != MessageSource.User) return;
 
             var argPos = 0;
-            if (!message.HasStringPrefix(_config["prefix"], ref argPos) &&
+            var prefix = await _servers.GetGuildPrefix(((SocketGuildChannel) message.Channel).Guild.Id) ?? "!";
+            if (!message.HasStringPrefix(prefix, ref argPos) &&
                 !message.HasMentionPrefix(_client.CurrentUser, ref argPos)) return;
 
             var context = new SocketCommandContext(_client, message);
@@ -63,6 +70,10 @@ namespace DS_Bot.Services
 
         private async Task UserJoined(SocketGuildUser socketGuildUser)
         {
+            // var roles = await _autoRolesHelper.GetAutoRolesAsync(socketGuildUser.Guild);
+            // if(roles.Count < 1) return;
+            // await socketGuildUser.AddRolesAsync(roles);
+            
             await socketGuildUser.SendMessageAsync($"Hello {socketGuildUser.Mention}");
           
             await socketGuildUser.Guild.TextChannels.First(x => x.Name == "🆕гостевой")
@@ -91,7 +102,7 @@ namespace DS_Bot.Services
             if(arg3.Emote.Name != "👍") return;
 
             var role = (arg2 as SocketGuildChannel)?.Guild.Roles.FirstOrDefault(x => x.Id == 871070668014379028);
-            await (arg3.User.Value as SocketGuildUser)?.AddRoleAsync(role);
+            if (arg3.User.Value != null) await ((SocketGuildUser) arg3.User.Value)?.AddRoleAsync(role);
         }
     }
 }
