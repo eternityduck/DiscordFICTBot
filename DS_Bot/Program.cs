@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Addons.Hosting;
+using Discord.Addons.Interactive;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
@@ -61,7 +62,9 @@ namespace DS_Bot
                         .AddSingleton<Ranks>()
                         .AddSingleton<AutoRoles>()
                         .AddSingleton<RanksHelper>()
-                        .AddSingleton<AutoRolesHelper>();
+                        .AddSingleton<AutoRolesHelper>()
+                        .AddSingleton<InteractiveService>()
+                        .AddSingleton<Images>();
 
                 })
                 .UseConsoleLifetime();

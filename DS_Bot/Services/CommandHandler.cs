@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -22,9 +24,10 @@ namespace DS_Bot.Services
         private readonly IConfiguration _config;
         private readonly Servers _servers;
         private readonly AutoRolesHelper _autoRolesHelper;
+        private readonly Images _images;
 
         public CommandHandler(IServiceProvider provider, DiscordSocketClient client, CommandService service,
-            IConfiguration config, Servers servers, AutoRolesHelper autoRolesHelper)
+            IConfiguration config, Servers servers, AutoRolesHelper autoRolesHelper, Images images)
         {
             _provider = provider;
             _client = client;
@@ -32,6 +35,7 @@ namespace DS_Bot.Services
             _config = config;
             _servers = servers;
             _autoRolesHelper = autoRolesHelper;
+            _images = images;
         }
 
         public override async Task InitializeAsync(CancellationToken cancellationToken)
@@ -43,6 +47,7 @@ namespace DS_Bot.Services
             _client.JoinedGuild += OnJoinedGuild;
             _client.UserJoined += UserJoined;
             _client.UserLeft += UserLeft;
+            _client.ReactionRemoved += OnReactionRemoved;
             await _service.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);
         }
 
@@ -56,6 +61,10 @@ namespace DS_Bot.Services
 
             var argPos = 0;
             var prefix = await _servers.GetGuildPrefix(((SocketGuildChannel) message.Channel).Guild.Id) ?? "!";
+            if (arg.Content == "Стреляю вверх") await arg.Channel.SendMessageAsync("Прямо в рай");
+            if (arg.Content == "Если не сосешь мне") await arg.Channel.SendMessageAsync("Тогда живо умирай");
+            if (arg.Content == "Доставай наличку") await arg.Channel.SendMessageAsync("Не убирай");
+            if (arg.Content == "Ты знаешь я люблю") await arg.Channel.SendMessageAsync("Когда карманы жрут салат");
             if (!message.HasStringPrefix(prefix, ref argPos) &&
                 !message.HasMentionPrefix(_client.CurrentUser, ref argPos)) return;
 
@@ -68,17 +77,39 @@ namespace DS_Bot.Services
             if (command.IsSpecified && !result.IsSuccess) await context.Channel.SendMessageAsync($"Error: {result}");
         }
 
-        private async Task UserJoined(SocketGuildUser socketGuildUser)
+        private async Task HandleUserJoined(SocketGuildUser arg)
         {
             // var roles = await _autoRolesHelper.GetAutoRolesAsync(socketGuildUser.Guild);
             // if(roles.Count < 1) return;
             // await socketGuildUser.AddRolesAsync(roles);
+            var channelId = await _servers.GetWelcomeAsync(arg.Guild.Id);
+            if(channelId == 0) return;
+            var channel = arg.Guild.GetTextChannel(channelId);
+            if (channel == null)
+            {
+                await _servers.ClearWelcomeAsync(arg.Guild.Id);
+                return;
+            }
+
+            var background = await _servers.GetBackgroundAsync(arg.Guild.Id);
             
-            await socketGuildUser.SendMessageAsync($"Hello {socketGuildUser.Mention}");
+            string path = await _images.CreateImageAsync(arg, background);
+            await channel.SendFileAsync(path, null);
+            File.Delete(path);
+            await arg.SendMessageAsync($"Привет, мы ждали именно тебя.\nДобро пожаловать на **FІCT.TALKING & GAMING!**\nЗайди и получи роли в отдельном канале {arg.Guild.GetTextChannel(759794521243779084).Mention} и ознакомься с нашими правилами в  {arg.Guild.GetTextChannel(755005977148915754).Mention} :stuck_out_tongue_winking_eye:");
           
-            await socketGuildUser.Guild.TextChannels.First(x => x.Name == "🆕гостевой")
-                .SendMessageAsync($"Привет, мы ждали именно тебя, {socketGuildUser.Mention}.\nДобро пожаловать на **FІCT.TALKING & GAMING!**\nЗайди и получи роли в отдельном канале {socketGuildUser.Guild.GetTextChannel(759794521243779084).Mention} и ознакомься с нашими правилами в  {socketGuildUser.Guild.GetTextChannel(755005977148915754).Mention} :stuck_out_tongue_winking_eye:");
+            await channel
+                .SendMessageAsync($"Привет, мы ждали именно тебя, {arg.Mention}.\nДобро пожаловать на **FІCT.TALKING & GAMING!**\nЗайди и получи роли в отдельном канале {arg.Guild.GetTextChannel(759794521243779084).Mention} и ознакомься с нашими правилами в  {arg.Guild.GetTextChannel(755005977148915754).Mention} :stuck_out_tongue_winking_eye:");
+            
         }
+
+        private async Task UserJoined(SocketGuildUser arg)
+        {
+            var newTask = new Task(async () => await HandleUserJoined(arg));
+            newTask.Start();
+        }
+        
+            
         private async Task UserLeft(SocketGuildUser arg)
         {
             await arg.Guild.TextChannels.First(x => x.Name == "🆕гостевой")
@@ -103,6 +134,10 @@ namespace DS_Bot.Services
 
             var role = (arg2 as SocketGuildChannel)?.Guild.Roles.FirstOrDefault(x => x.Id == 871070668014379028);
             if (arg3.User.Value != null) await ((SocketGuildUser) arg3.User.Value)?.AddRoleAsync(role);
+        }
+        private Task OnReactionRemoved(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2, SocketReaction arg3)
+        {
+            throw new NotImplementedException();
         }
     }
 }

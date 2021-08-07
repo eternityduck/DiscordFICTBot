@@ -17,9 +17,9 @@ namespace DS_Bot.Modules
     {
         private readonly ILogger<MessageModule> _logger;
         private readonly RanksHelper _ranksHelper;
-
-        public MessageModule(ILogger<MessageModule> logger, RanksHelper ranksHelper)
-            => (_logger, _ranksHelper) = (logger, ranksHelper);
+        private readonly Servers _servers;
+        public MessageModule(ILogger<MessageModule> logger, RanksHelper ranksHelper, Servers servers)
+            => (_logger, _ranksHelper, _servers) = (logger, ranksHelper, servers);
 
         [Command("ping")]
         //[Alias("p")] сокращение
@@ -35,17 +35,7 @@ namespace DS_Bot.Modules
         {
             await Context.Channel.SendMessageAsync("**FІCT. TALKING & GAMING!**");
         }
-
-        [Command("math")]
-        public async Task MathAsync([Remainder] string math)
-        {
-            var dt = new DataTable();
-            var result = dt.Compute(math, null);
-
-            await ReplyAsync($"Result: {result}");
-            _logger.LogInformation($"{Context.User.Username} executed the math command!");
-        }
-
+        
         [Command("delete")]
         [RequireUserPermission(GuildPermission.Administrator)]
         [RequireUserPermission(GuildPermission.ManageMessages)]
@@ -58,17 +48,7 @@ namespace DS_Bot.Modules
             await Task.Delay(delay);
             await m.DeleteAsync();
         }
-
-        [Command("info")]
-        public async Task InfoAsync(SocketGuildUser socketGuildUser = null)
-        {
-            if (socketGuildUser is null)
-            {
-                socketGuildUser = Context.User as SocketGuildUser;
-            }
-
-            await ReplyAsync($"ID: {socketGuildUser.Id}\n" + $"Name: {socketGuildUser.Username}");
-        }
+        
 
         [Command("cry")]
         public async Task CryAsync()
@@ -126,5 +106,78 @@ namespace DS_Bot.Modules
             await ((SocketGuildUser) Context.User).AddRoleAsync(role);
             await ReplyAsync($"Successfully added the rank {role.Mention} ");
         }
+        
+        [Command("welcome")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task Welcome(string option = null, string value = null)
+        {
+            if (option is null && value is null)
+            {
+                var fetched = await _servers.GetWelcomeAsync(Context.Guild.Id);
+                if (fetched == 0)
+                {
+                    await ReplyAsync("There is not a welcome channel yet! Set it up!");
+                    return;
+                }
+
+                var fetchedChannel = Context.Guild.GetTextChannel(fetched);
+                if (fetchedChannel is null)
+                {
+                    await ReplyAsync("There is not a welcome channel yet! Set it up!");
+                    await _servers.ClearWelcomeAsync(Context.Guild.Id);
+                }
+                var fetchedBack = await _servers.GetBackgroundAsync(Context.Guild.Id);
+                if (fetchedBack != null)
+                {
+                    await ReplyAsync($"The channel used for welcome module is {fetchedChannel.Mention}.\n The background is {fetchedBack}.");
+               
+                }
+                else
+                {
+                    await ReplyAsync($"The channel used for welcome module is {fetchedChannel?.Mention}");
+                }
+                return;
+            }
+
+            if (option == "channel" && value != null)
+            {
+                if (!MentionUtils.TryParseChannel(value, out ulong parseId))
+                {
+                    await ReplyAsync("Please pass a valid channel");
+                    return;
+                }
+
+                var parsedChannel = Context.Guild.GetTextChannel(parseId);
+                if (parsedChannel is null)
+                {
+                    await ReplyAsync("Please pass a valid channel");
+                    return;
+                }
+                await _servers.ModifyWelcomeAsync(Context.Guild.Id, parseId);
+                await ReplyAsync($"Successfully modified");
+                return;
+            }
+            if (option == "background" && value != null)
+            {
+                if (value == "clear")
+                {
+                    await _servers.ClearBackgroundAsync(Context.Guild.Id);
+                    await ReplyAsync("Successfully cleared the background");
+                    return;
+                }
+                await _servers.ModifyBackgroundAsync(Context.Guild.Id, value);
+                await ReplyAsync($"Successfully modified");
+                return;
+            }
+
+            if (option == "clear" && value == null)
+            {
+                await _servers.ClearWelcomeAsync(Context.Guild.Id);
+                await ReplyAsync("Successfully cleared the welcome channel");
+                return;
+            }
+            
+        }
+        
     }
 }
