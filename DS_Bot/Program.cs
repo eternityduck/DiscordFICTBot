@@ -61,8 +61,7 @@ namespace DS_Bot
                         .AddSingleton<Servers>()
                         .AddSingleton<Ranks>()
                         .AddSingleton<AutoRoles>()
-                        .AddSingleton<RanksHelper>()
-                        .AddSingleton<AutoRolesHelper>()
+                        .AddSingleton<ServerHelper>()
                         .AddSingleton<InteractiveService>()
                         .AddSingleton<Images>();
 

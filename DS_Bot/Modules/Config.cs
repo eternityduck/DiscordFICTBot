@@ -10,19 +10,19 @@ namespace DS_Bot.Modules
 {
     public class Config : ModuleBase<SocketCommandContext>
     {
-        private readonly RanksHelper _ranksHelper;
-        private readonly AutoRolesHelper _rolesHelper;
         private readonly Servers _servers;
         private readonly Ranks _ranks;
         private readonly AutoRoles _autoRoles;
+        private readonly ServerHelper _serverHelper;
 
-        public Config(RanksHelper ranksHelper, AutoRolesHelper autoRolesHelper, Servers servers, Ranks ranks, AutoRoles autoRoles) =>
-            (_ranksHelper, _rolesHelper, _servers, _ranks, _autoRoles) = (ranksHelper, autoRolesHelper, servers, ranks, autoRoles);
+        public Config(Servers servers, Ranks ranks, AutoRoles autoRoles, ServerHelper serverHelper) =>
+            ( _servers, _ranks, _autoRoles, _serverHelper) = ( servers, ranks, autoRoles, serverHelper);
 
+        [Summary("Gets all ranks from server")]
         [Command("ranks", RunMode = RunMode.Async)]
         public async Task Ranks()
         {
-            var ranks = await _ranksHelper.GetRanksAsync(Context.Guild);
+            var ranks = await _serverHelper.GetRanksAsync(Context.Guild);
             if (ranks.Count == 0)
             {
                 await ReplyAsync("This server doesn`t have any ranks!");
@@ -43,10 +43,11 @@ namespace DS_Bot.Modules
         [Command("addrank", RunMode = RunMode.Async)]
         [RequireUserPermission(GuildPermission.Administrator)]
         [RequireBotPermission(GuildPermission.ManageRoles)]
+        [Summary("Adds the rank")]
         public async Task AddRankAsync([Remainder] string name)
         {
             await Context.Channel.TriggerTypingAsync();
-            var ranks = await _ranksHelper.GetRanksAsync(Context.Guild);
+            var ranks = await _serverHelper.GetRanksAsync(Context.Guild);
 
             var role = Context.Guild.Roles.FirstOrDefault(x =>
                 string.Equals(x.Name, name, StringComparison.CurrentCultureIgnoreCase));
@@ -75,10 +76,11 @@ namespace DS_Bot.Modules
         [Command("delrank", RunMode = RunMode.Async)]
         [RequireUserPermission(GuildPermission.Administrator)]
         [RequireUserPermission(GuildPermission.ManageRoles)]
+        [Summary("Deletes the rank")]
         public async Task DeleteRankAsync([Remainder] string name)
         {
             await Context.Channel.TriggerTypingAsync();
-            var ranks = await _ranksHelper.GetRanksAsync(Context.Guild);
+            var ranks = await _serverHelper.GetRanksAsync(Context.Guild);
             var role = Context.Guild.Roles.FirstOrDefault(x =>
                 string.Equals(x.Name, name, StringComparison.CurrentCultureIgnoreCase));
             if (role is null)
@@ -102,9 +104,10 @@ namespace DS_Bot.Modules
         }
         [Command("autoroles", RunMode = RunMode.Async)]
         [RequireUserPermission(GuildPermission.Administrator)]
+        [Summary("Gets autoroles from server")]
         public async Task AutoRoles()
         {
-            var autoRoles = await _rolesHelper.GetAutoRolesAsync(Context.Guild);
+            var autoRoles = await _serverHelper.GetAutoRolesAsync(Context.Guild);
             if (autoRoles.Count == 0)
             {
                 await ReplyAsync("This server doesn`t have any autoRoles!");
@@ -125,10 +128,11 @@ namespace DS_Bot.Modules
         [Command("addautorole", RunMode = RunMode.Async)]
         [RequireUserPermission(GuildPermission.Administrator)]
         [RequireBotPermission(GuildPermission.ManageRoles)]
+        [Summary("Adds role to the autoroles")]
         public async Task AddAutoRoleAsync([Remainder] string name)
         {
             await Context.Channel.TriggerTypingAsync();
-            var autoRoles = await _rolesHelper.GetAutoRolesAsync(Context.Guild);
+            var autoRoles = await _serverHelper.GetAutoRolesAsync(Context.Guild);
 
             var role = Context.Guild.Roles.FirstOrDefault(x =>
                 string.Equals(x.Name, name, StringComparison.CurrentCultureIgnoreCase));
@@ -150,10 +154,11 @@ namespace DS_Bot.Modules
         [Command("delautorole", RunMode = RunMode.Async)]
         [RequireUserPermission(GuildPermission.Administrator)]
         [RequireUserPermission(GuildPermission.ManageRoles)]
+        [Summary("Deletes role from autoroles")]
         public async Task DeleteAutoRoleAsync([Remainder] string name)
         {
             await Context.Channel.TriggerTypingAsync();
-            var autoRolesAsync = await _rolesHelper.GetAutoRolesAsync(Context.Guild);
+            var autoRolesAsync = await _serverHelper.GetAutoRolesAsync(Context.Guild);
             var role = Context.Guild.Roles.FirstOrDefault(x =>
                 string.Equals(x.Name, name, StringComparison.CurrentCultureIgnoreCase));
             if (role is null)
@@ -172,6 +177,7 @@ namespace DS_Bot.Modules
         }
         [Command("prefix", RunMode = RunMode.Async)]
         [RequireUserPermission(GuildPermission.Administrator)]
+        [Summary("Changes the prefix on server")]
         public async Task PrefixAsync(string prefix = null)
         {
             if (prefix == null)
@@ -188,6 +194,56 @@ namespace DS_Bot.Modules
 
             await _servers.ModifyPrefix(Context.Guild.Id, prefix);
             await ReplyAsync($"The prefix was adjusted to `{prefix}`");
+            await _serverHelper.SendLogAsync(Context.Guild, "Prefix adjusted", $"Modify the prefix to {prefix}");
+        }
+        [Command("logs")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [Summary("Sets up the logs channel")]
+        public async Task Logs(string value = null)
+        {
+            if (value is null)
+            {
+                var fetched = await _servers.GetLogsAsync(Context.Guild.Id);
+                if (fetched == 0)
+                {
+                    await ReplyAsync("There is not a logs channel yet! Set it up!");
+                    return;
+                }
+
+                var fetchedChannel = Context.Guild.GetTextChannel(fetched);
+                if (fetchedChannel is null)
+                {
+                    await ReplyAsync("There is not a logs channel yet! Set it up!");
+                    await _servers.ClearWelcomeAsync(Context.Guild.Id);
+                }
+
+                await ReplyAsync($"The channel for logs is set to {fetchedChannel?.Mention}");
+
+                return;
+            }
+
+            if (value != "clear")
+            {
+                if (!MentionUtils.TryParseChannel(value, out ulong parseId))
+                {
+                    await ReplyAsync("Please pass a valid channel");
+                    return;
+                }
+
+                var parsedChannel = Context.Guild.GetTextChannel(parseId);
+                if (parsedChannel is null)
+                {
+                    await ReplyAsync("Please pass a valid channel");
+                    return;
+                }
+
+                await _servers.ModifyLogsAsync(Context.Guild.Id, parseId);
+                await ReplyAsync($"Successfully modified the logs channel to {Context.Channel.Name}");
+                return;
+            }
+
+            await _servers.ClearWelcomeAsync(Context.Guild.Id);
+            await ReplyAsync("Successfully cleared the logs channel");
         }
     }
 }
