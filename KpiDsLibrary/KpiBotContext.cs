@@ -8,6 +8,12 @@ namespace KpiDsLibrary
         public DbSet<Server> Servers { get; set; }
         public DbSet<Rank> Ranks { get; set; }
         public DbSet<AutoRole> AutoRoles { get; set; }
+
+        // public KpiBotContext(DbContextOptions<KpiBotContext> options) : base(options)
+        // {
+        //     Database.EnsureCreated();
+        // }
+        
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
             options.UseMySql("server=localhost;user=root;database=kpibot;port=3306;Connect Timeout=5;",
@@ -19,6 +25,10 @@ namespace KpiDsLibrary
     {
         public ulong Id { get; set; }
         public string Prefix { get; set; }
+        public ulong Welcome { get; set; }
+        public string Background { get; set; }
+        public ulong Logs { get; set; }
+        
     }
 
     public class Rank
