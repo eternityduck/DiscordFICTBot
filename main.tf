@@ -19,11 +19,11 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_eip" "lb" {
-  instance = aws_instance.docker_site.id
+  instance = aws_instance.ds_bot.id
   vpc      = true
 }
 
-resource "aws_instance" "docker_site" {
+resource "aws_instance" "ds_bot" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = "t2.micro"
   vpc_security_group_ids      = [aws_security_group.allow_web.id]
@@ -41,13 +41,13 @@ resource "aws_instance" "docker_site" {
     inline = [
     "sudo apt-get update && install curl",
     "curl -sSL https://get.docker.com/ | sh",
-    "sudo docker run -d --name docker_site --log-driver=awslogs --log-opt awslogs-group=logs -p 80:80 straxseller/devops_prac",
+    "sudo docker run -d --name ds_bot --log-driver=awslogs --log-opt awslogs-group=logs -p 80:80 straxseller/devops_prac",
     "sudo docker run -d --name watchtower -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower --cleanup -i 10",
     ]
   }
 
   tags = {
-    Name = "docker_site"
+    Name = "ds_bot"
   }
 }
 
@@ -80,5 +80,5 @@ resource "aws_security_group" "allow_web" {
 }
 
 output "Elastic_IP" {
-  value = aws_instance.docker_site.public_ip
+  value = aws_instance.ds_bot.public_ip
 }
