@@ -12,7 +12,7 @@ RUN for file in $(ls *.csproj); do mkdir -p src/${file%.*}/ && mv $file src/${fi
 # change the WORKDIR to the csproj here if you want
 # else that restore will restore all the solution
 ################################################################
-RUN dotnet restore
+RUN dotnet restore --verbosity:d
 
 ################################################################
 # if you changed the WORKDIR go back the the sln one
@@ -22,7 +22,8 @@ RUN dotnet restore
 COPY . ./
 
 # use dotnet build if you want
+RUN dotnet build 
 
-RUN dotnet publish ./src/the.actual.project.csproj -c release -o /app/publish/the.actual.project
+RUN dotnet publish ./src/DS_Bot/DS_Bot.csproj -c Release -o /app/publish
 
 

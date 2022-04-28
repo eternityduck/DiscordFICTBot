@@ -30,12 +30,6 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
-          context: ./KpiDsLibrary
-          push: true
-          tags: straxseller/kpidslibrary:latest
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: ./DS_Bot
+          context: .
           push: true
           tags: straxseller/ds_bot:latest
