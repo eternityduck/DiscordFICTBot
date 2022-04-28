@@ -28,7 +28,7 @@ namespace DS_Bot.Services
         
         private readonly Images _images;
         public static List<Mute> Mutes = new List<Mute>();
-        public static List<SocketRole> Roles = new List<SocketRole>();
+        public static Dictionary<ulong, List<SocketRole>> Roles = new Dictionary<ulong, List<SocketRole>>();
 
         public CommandHandler(IServiceProvider provider, DiscordSocketClient client, CommandService service,
             IConfiguration config, Servers servers, Images images)
@@ -50,10 +50,8 @@ namespace DS_Bot.Services
             _client.JoinedGuild += OnJoinedGuild;
             _client.UserJoined += UserJoined;
             _client.UserLeft += UserLeft;
-            _client.ReactionRemoved += OnReactionRemoved;
-            
-            
 
+            
             var newTask = new Task(async () => await MuteHandler());
             newTask.Start();
             await _service.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);
@@ -79,10 +77,7 @@ namespace DS_Bot.Services
             var argPos = 0;
             var prefix = await _servers.GetGuildPrefix(((SocketGuildChannel) message.Channel).Guild.Id) ?? "!";
 
-            if (arg.Content == "Стреляю вверх") await arg.Channel.SendMessageAsync("Прямо в рай");
-            if (arg.Content == "Если не сосешь мне") await arg.Channel.SendMessageAsync("Тогда живо умирай");
-            if (arg.Content == "Доставай наличку") await arg.Channel.SendMessageAsync("Не убирай");
-            if (arg.Content == "Ты знаешь я люблю") await arg.Channel.SendMessageAsync("Когда карманы жрут салат");
+           
             if (!message.HasStringPrefix(prefix, ref argPos) &&
                 !message.HasMentionPrefix(_client.CurrentUser, ref argPos)) return;
 
@@ -160,12 +155,7 @@ namespace DS_Bot.Services
             var role = (arg2 as SocketGuildChannel)?.Guild.Roles.FirstOrDefault(x => x.Id == 871070668014379028);
             if (arg3.User.Value != null) await ((SocketGuildUser) arg3.User.Value)?.AddRoleAsync(role);
         }
-
-        private Task OnReactionRemoved(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2,
-            SocketReaction arg3)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         private async Task MuteHandler()
         {
@@ -199,7 +189,11 @@ namespace DS_Bot.Services
                 }
 
                 await user.RemoveRoleAsync(mute.Role);
-                //if(Roles != null) await user.AddRolesAsync(Roles);
+                if (Roles != null)
+                {
+                    await user.AddRolesAsync(Roles[user.Id]);
+                    Roles.Remove(user.Id);
+                }
                 removes.Add(mute);
             }
 

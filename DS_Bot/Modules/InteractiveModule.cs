@@ -1,4 +1,5 @@
 ﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -101,11 +102,22 @@ namespace DS_Bot.Modules
             for (int j = 0; j < choices.Length; j++)
             {
                 description += $"{emojis[j]} {choices[j]}\n ";
-                //embed.AddField($"{emojis[j]}", $"{choices[j]} ", true);
             }
             
             var msg = await this.Context.Channel.SendMessageAsync(string.Empty, false, embed.WithDescription(description).Build());
             await msg.AddReactionsAsync(emojis.TakeWhile((x, y)=> y != choices.Length).ToArray());
+            
+        }
+
+        [Command("rolegive")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task RoleGiveAsync()
+        {
+            
+        }
+        [Command("createcommand")]
+        public async Task CreateCategory(string commandName)
+        {
             
         }
     }

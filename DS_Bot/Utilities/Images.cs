@@ -15,9 +15,19 @@ namespace DS_Bot.Utilities
         {
             var avatar = await FetchImageAsync(user.GetAvatarUrl(size: 2048, format: Discord.ImageFormat.Png) ?? user.GetDefaultAvatarUrl());
             var background = await FetchImageAsync(url);
+            var image = await FetchImageAsync("https://i.pinimg.com/564x/95/73/89/957389de0aa7086abc117d33c9627992.jpg");
 
             background = CropToBanner(background);
-            avatar = ClipImageToCircle(avatar);
+
+            try
+            {
+                avatar = ClipImageToCircle(avatar);
+            }
+            catch (Exception)
+            {
+                avatar = ClipImageToCircle(image);
+            }
+            
 
             var bitmap = avatar as Bitmap;
             bitmap?.MakeTransparent();

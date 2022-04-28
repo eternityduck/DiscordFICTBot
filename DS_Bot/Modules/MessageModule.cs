@@ -210,9 +210,14 @@ namespace DS_Bot.Modules
                 await Context.Channel.SendErrorAsync("Invalid", "Already muted");
                 return;
             }
-            // CommandHandler.Roles.AddRange(user.Roles);
-            // var rolesToRemove = user.Roles.Where(x => x.Id != 753345298184667206).ToList();
-            // await user.RemoveRolesAsync(rolesToRemove);
+
+            var everyone = user.Roles.Except(user.Roles.Where(x => x.IsEveryone)).ToList();
+            //CommandHandler.Roles.Clear();
+            CommandHandler.Roles.Add(user.Id, everyone);
+            
+            var rolesToRemove = user.Roles.Where(x => !x.IsEveryone).ToList();
+            
+            await user.RemoveRolesAsync(rolesToRemove);
             await role.ModifyAsync(x => x.Position = Context.Guild.CurrentUser.Hierarchy);
 
             foreach (var ch in Context.Guild.TextChannels)
@@ -248,13 +253,16 @@ namespace DS_Bot.Modules
                 return;
             }
 
-            if (user.Roles.Contains(role))
+            if (!user.Roles.Contains(role))
             {
                 await Context.Channel.SendErrorAsync("Invalid", "Not muted");
                 return;
             }
             
             await user.RemoveRoleAsync(role);
+            await user.AddRolesAsync(CommandHandler.Roles[user.Id]);
+            CommandHandler.Roles.Remove(user.Id);
+            CommandHandler.Mutes.Remove(CommandHandler.Mutes.FirstOrDefault(x => x.User == user));
             await Context.Channel.SendSuccessAsync($"UnMuted {user.Mention}", $"{user.Mention} were unmuted");
         }
 
