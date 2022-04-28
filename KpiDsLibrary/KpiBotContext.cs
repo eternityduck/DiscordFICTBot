@@ -9,10 +9,10 @@ namespace KpiDsLibrary
         public DbSet<Rank> Ranks { get; set; }
         public DbSet<AutoRole> AutoRoles { get; set; }
 
-        // public KpiBotContext(DbContextOptions<KpiBotContext> options) : base(options)
-        // {
-        //     Database.EnsureCreated();
-        // }
+        public KpiBotContext(DbContextOptions<KpiBotContext> options) : base(options)
+        {
+            //Database.EnsureCreated();
+        }
         
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
