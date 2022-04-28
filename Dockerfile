@@ -1,35 +1,28 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS base
+
+FROM mcr.microsoft.com/dotnet/sdk:6.0
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
-COPY ./DS_Bot/*.sln ./
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
-WORKDIR /src
-COPY ["DS_Bot/DS_Bot.csproj", "DS_Bot/"]
 
-RUN dotnet restore "DS_Bot/DS_Bot.csproj"
-COPY . .
-WORKDIR "/src/DS_Bot"
-RUN dotnet build "DS_Bot.csproj" -c Release -o /app/build
+COPY ./*.sln ./nuget.config  ./
 
-FROM build AS publish
-RUN dotnet publish "DS_Bot.csproj" -c Release -o /app/publish
+# Copy the main source project files
+COPY ./src/*/*.csproj ./
+RUN for file in $(ls *.csproj); do mkdir -p src/${file%.*}/ && mv $file src/${file%.*}/; done
 
-FROM base AS final
-WORKDIR /app`enter code here`
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "DS_Bot.dll"]
+################################################################
+# change the WORKDIR to the csproj here if you want
+# else that restore will restore all the solution
+################################################################
+RUN dotnet restore
 
-
-
-
-# FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
-# WORKDIR /src
-# COPY ["DS_Bot/DS_Bot.csproj", "DS_Bot/"]
-# RUN dotnet restore "DS_Bot/DS_Bot.csproj"
-# COPY . ./
-# RUN dotnet publish -c Release -o out 
-# FROM mcr.microsoft.com/dotnet/sdk:6.0
+################################################################
+# if you changed the WORKDIR go back the the sln one
 # WORKDIR /app
-# COPY --from=build-env /app/out .
-# ENTRYPOINT ["dotnet", "DS_Bot.dll"]
+################################################################
+# copy everything else and build
+COPY . ./
+
+# use dotnet build if you want
+
+RUN dotnet publish ./src/the.actual.project.csproj -c release -o /app/publish/the.actual.project
+
+
